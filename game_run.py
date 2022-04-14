@@ -5,7 +5,7 @@ import os
 import subprocess
 import configparser
 
-VERSION="1.1"
+VERSION="1.2"
 
 def cmd_gen_args(args, cmd):
     if args.gamemode:
