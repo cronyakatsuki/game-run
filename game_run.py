@@ -152,8 +152,12 @@ def main():
     parser.add_argument('-d', '--dxvk', action='store_true', help='Enable specific dxvk settings')
 
     config = configparser.ConfigParser()
-    configExists = True
-    config.read('config.ini')
+    
+    if os.path.exists(os.path.expanduser("~/.config/game-run")) and os.path.isfile(os.path.expanduser("~/.config/game-run/config.ini")):
+        configExists = True
+        config.read(os.path.expanduser("~/.config/game-run/config.ini"))
+    else:
+        configExists = False
 
     if len(sys.argv) == 1 and not configExists:
         parser.print_help()
