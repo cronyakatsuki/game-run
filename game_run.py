@@ -5,14 +5,16 @@ import os
 import subprocess
 import configparser
 
-VERSION="1.2"
+VERSION = "1.2"
+
 
 def cmd_gen_args(args, cmd):
     if args.gamemode:
         cmd.append('gamemoderun')
-    
-    if args.gamemode:
+
+    if args.mangohud:
         cmd.append('mangohud')
+        cmd.append('--dlsym')
 
     if args.fps_limit:
         cmd.append('strangle')
@@ -28,7 +30,8 @@ def cmd_gen_args(args, cmd):
         elif args.wine == 'proton':
             os.environ['STEAM_COMPAT_DATA_PATH'] = args.prefix
             os.environ['STEAM_COMPAT_CLIENT_INSTALL_PATH'] = '/home/ivica/.steam/steam'
-            cmd.append('/usr/share/steam/compatibilitytools.d/proton-ge-custom/proton')
+            cmd.append(
+                '/usr/share/steam/compatibilitytools.d/proton-ge-custom/proton')
             cmd.append('run')
         else:
             cmd.append(args.wine)
@@ -58,6 +61,11 @@ def cmd_gen_args(args, cmd):
         os.environ['DXVK_STATE_CACHE'] = '1'
         os.environ['DXVK_STATE_CACHE_PATH'] = args.prefix
 
+    if args.prime:
+        os.environ['__NV_PRIME_RENDER_OFFLOAD'] = '1'
+        os.environ['__VK_LAYER_NV_optimus'] = 'NVIDIA_only'
+        os.environ['__GLX_VENDOR_LIBRARY_NAME'] = 'nvidia'
+
     if args.game:
         cmd.append(args.game)
 
@@ -67,6 +75,7 @@ def cmd_gen_args(args, cmd):
 
     return cmd
 
+
 def cmd_gen_config(config, cmd, game):
     if config.has_option(game, 'gamemode'):
         if config.getboolean(game, 'gamemode'):
@@ -75,6 +84,7 @@ def cmd_gen_config(config, cmd, game):
     if config.has_option(game, 'mangohud'):
         if config.getboolean(game, 'mangohud'):
             cmd.append('mangohud')
+            cmd.append('--dlsym')
 
     if config.has_option(game, 'fps'):
         cmd.append('strangle')
@@ -90,11 +100,12 @@ def cmd_gen_config(config, cmd, game):
         elif config.get(game, 'wine') == 'proton':
             os.environ['STEAM_COMPAT_DATA_PATH'] = config.get(game, 'prefix')
             os.environ['STEAM_COMPAT_CLIENT_INSTALL_PATH'] = '/home/ivica/.steam/steam'
-            cmd.append('/usr/share/steam/compatibilitytools.d/proton-ge-custom/proton')
+            cmd.append(
+                '/usr/share/steam/compatibilitytools.d/proton-ge-custom/proton')
             cmd.append('run')
         else:
             cmd.append(config.get(game, 'wine'))
-    
+
     if config.has_option(game, 'sync') and not config.has_option(game, 'wine'):
         print('Sync option needs for wine to be set in config!')
         sys.exit(1)
@@ -116,11 +127,16 @@ def cmd_gen_config(config, cmd, game):
         print('Dxvk option needs for wine to be set!')
         sys.exit(1)
     elif config.has_option(game, 'dxvk'):
-        if config.getboolean(game, 'fsr'):
+        if config.getboolean(game, 'dxvk'):
             os.environ['DXVK_LOG_LEVEL'] = 'none'
             os.environ['DXVK_HUD'] = 'compiler'
             os.environ['DXVK_STATE_CACHE'] = '1'
             os.environ['DXVK_STATE_CACHE_PATH'] = config.get(game, 'prefix')
+
+    if config.has_option(game, 'prime'):
+        os.environ['__NV_PRIME_RENDER_OFFLOAD'] = '1'
+        os.environ['__VK_LAYER_NV_optimus'] = 'NVIDIA_only'
+        os.environ['__GLX_VENDOR_LIBRARY_NAME'] = 'nvidia'
 
     if config.has_option(game, 'path'):
         cmd.append(config.get(game, 'path'))
@@ -131,28 +147,36 @@ def cmd_gen_config(config, cmd, game):
 
     return cmd
 
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-v', '--version', action='store_true', help='Print program version')
+    parser.add_argument('-v', '--version', action='store_true',
+                        help='Print program version')
     parser.add_argument('game', type=str, metavar='GAME', action='store', nargs='?',
                         help="Command or path to the game you wanna run")
-    parser.add_argument('-a', '--args', type=str, metavar='ARGUMENTS', action='store', 
+    parser.add_argument('-a', '--args', type=str, metavar='ARGUMENTS', action='store',
                         help='Additional game arguments')
-    parser.add_argument('-g', '--gamemode', action='store_true', help='Run game with gamemode')
-    parser.add_argument('-m', '--mangohud', action='store_true', help='Run game with mangohud')
+    parser.add_argument('-g', '--gamemode', action='store_true',
+                        help='Run game with gamemode')
+    parser.add_argument('-m', '--mangohud', action='store_true',
+                        help='Run game with mangohud')
     parser.add_argument('-f', '--fps_limit', type=int, metavar='FPS', action='store',
                         help="Limit game fps (Must have libstrangle installed)")
     parser.add_argument('-w', '--wine', type=str, metavar='WINE', action='store',
                         help='Specify either WINE or PROTON version you wanna use(NEEDS FOR PREFIX TO BE SET)')
     parser.add_argument('-p', '--prefix', type=str, metavar='WINE_PREFIX', action='store',
                         help='Path to wine prefix')
-    parser.add_argument('-s', '--sync', type=str, metavar='WINE_SYNC', action='store', 
+    parser.add_argument('-s', '--sync', type=str, metavar='WINE_SYNC', action='store',
                         help='Specify what sync method to use with WINE')
-    parser.add_argument('--fsr', action='store_true', help='Enable fsr for any wine game')
-    parser.add_argument('-d', '--dxvk', action='store_true', help='Enable specific dxvk settings')
+    parser.add_argument('--fsr', action='store_true',
+                        help='Enable fsr for any wine game')
+    parser.add_argument('-d', '--dxvk', action='store_true',
+                        help='Enable specific dxvk settings')
+    parser.add_argument('--prime', action='store_true',
+                        help='Use dedicated gpu on an optimus system')
 
     config = configparser.ConfigParser()
-    
+
     if os.path.exists(os.path.expanduser("~/.config/game-run")) and os.path.isfile(os.path.expanduser("~/.config/game-run/config.ini")):
         configExists = True
         config.read(os.path.expanduser("~/.config/game-run/config.ini"))
@@ -172,7 +196,7 @@ def main():
 
     args = parser.parse_args()
 
-    cmd=[]
+    cmd = []
 
     if args.version:
         print(f'Version: {VERSION}')
@@ -189,6 +213,7 @@ def main():
 
     subprocess.Popen(cmd)
     sys.exit(0)
+
 
 if __name__ == "__main__":
     main()
