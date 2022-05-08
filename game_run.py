@@ -5,7 +5,7 @@ import os
 import subprocess
 import configparser
 
-VERSION = "1.2"
+VERSION = "1.3"
 
 
 def set_vsync(cmd, mode):
@@ -73,6 +73,12 @@ def set_nvidia_prime():
     os.environ['__GLX_VENDOR_LIBRARY_NAME'] = 'nvidia'
 
 
+def set_java(cmd):
+    cmd.append('java')
+    cmd.append('-jar')
+    return cmd
+
+
 def cmd_gen_args(args, cmd):
     if args.fps_limit and args.vsync:
         cmd.append('strangle')
@@ -121,6 +127,9 @@ def cmd_gen_args(args, cmd):
 
     if args.prime:
         set_nvidia_prime()
+
+    if args.java:
+        cmd = set_java(cmd)
 
     if args.game:
         cmd.append(args.game)
@@ -186,6 +195,10 @@ def cmd_gen_config(config, cmd, game):
         if config.getboolean(game, 'prime'):
             set_nvidia_prime()
 
+    if config.has_option(game, 'java'):
+        if config.getboolean(game, 'java'):
+            cmd = set_java(cmd)
+
     if config.has_option(game, 'path'):
         cmd.append(config.get(game, 'path'))
 
@@ -205,6 +218,8 @@ def main():
                         help='Print program version')
     parser.add_argument('game', type=str, metavar='GAME', action='store', nargs='?',
                         help="Command or path to the game you wanna run")
+    parser.add_argument('java', action='store_true',
+                        help='Run a java game')
     parser.add_argument('-a', '--args', type=str, metavar='ARGUMENTS', action='store',
                         help='Additional game arguments')
     parser.add_argument('-g', '--gamemode', action='store_true',
