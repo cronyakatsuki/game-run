@@ -5,7 +5,7 @@ import os
 import subprocess
 import configparser
 
-VERSION = "1.3"
+VERSION = "1.4"
 
 
 def set_vsync(cmd, mode):
@@ -23,9 +23,10 @@ def set_fps(cmd, fps):
     return cmd
 
 
-def enable_mangohud(cmd):
+def enable_mangohud(cmd, dlsym=False):
     cmd.append('mangohud')
-    cmd.append('--dlsym')
+    if dlsym:
+        cmd.append('--dlsym')
     return cmd
 
 
@@ -79,6 +80,12 @@ def set_java(cmd):
     return cmd
 
 
+def set_flatpak(cmd):
+    cmd.append('flatpak')
+    cmd.append('run')
+    return cmd
+
+
 def cmd_gen_args(args, cmd):
     if args.fps_limit and args.vsync:
         cmd.append('strangle')
@@ -95,7 +102,7 @@ def cmd_gen_args(args, cmd):
         cmd.append('gamemoderun')
 
     if args.mangohud:
-        cmd = enable_mangohud(cmd)
+        cmd = enable_mangohud(cmd, args.dlsym)
 
     if args.prefix and not args.wine:
         print('Wine needs to be provided with prefix!')
@@ -131,6 +138,9 @@ def cmd_gen_args(args, cmd):
     if args.java:
         cmd = set_java(cmd)
 
+    if args.flatpak:
+        cmd = set_flatpak(cmd)
+
     if args.game:
         cmd.append(args.game)
 
@@ -160,7 +170,10 @@ def cmd_gen_config(config, cmd, game):
         if config.getboolean(game, 'gamemode'):
             cmd.append('gamemoderun')
 
-    if config.has_option(game, 'mangohud'):
+    if config.has_option(game, 'mangohud') and config.has_option(game, 'dlsym'):
+        if config.getboolean(game, 'mangohud'):
+            cmd = enable_mangohud(cmd, config.getboolean(game, 'dlsym'))
+    elif config.has_option(game, 'mangohud'):
         if config.getboolean(game, 'mangohud'):
             cmd = enable_mangohud(cmd)
 
@@ -199,6 +212,10 @@ def cmd_gen_config(config, cmd, game):
         if config.getboolean(game, 'java'):
             cmd = set_java(cmd)
 
+    if config.has_option(game, 'flatpak'):
+        if config.getboolean(game, 'flatpak'):
+            cmd = set_flatpak(cmd)
+
     if config.has_option(game, 'path'):
         cmd.append(config.get(game, 'path'))
 
@@ -220,12 +237,16 @@ def main():
                         help="Command or path to the game you wanna run")
     parser.add_argument('java', action='store_true',
                         help='Run a java game')
+    parser.add_argument('flatpak', action='store_true',
+                        help='Run a flatpak game')
     parser.add_argument('-a', '--args', type=str, metavar='ARGUMENTS', action='store',
                         help='Additional game arguments')
     parser.add_argument('-g', '--gamemode', action='store_true',
                         help='Run game with gamemode')
     parser.add_argument('-m', '--mangohud', action='store_true',
                         help='Run game with mangohud')
+    parser.add_argument('--dlsym', action='store_true',
+                        help='Enable dlsym loading for mangohud')
     parser.add_argument('-f', '--fps_limit', type=int, metavar='FPS', action='store',
                         help="Limit game fps (Must have libstrangle installed)")
     parser.add_argument('--vsync', type=str, metavar='VSYNC', action='store',
