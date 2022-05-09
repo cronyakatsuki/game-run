@@ -86,6 +86,29 @@ def set_flatpak(cmd):
     return cmd
 
 
+def list_categories(config):
+    categories = []
+    for game in config.sections():
+        if config.has_option(game, "category"):
+            category = config.get(game, "category")
+            if category not in categories:
+                categories.append(category)
+
+    for category in categories:
+        print(category)
+
+
+def list_by_category(list, config):
+    if list == "categories":
+        list_categories(config)
+    else:
+        for game in config.sections():
+            if config.has_option(game, "category"):
+                if config.get(game, "category") == list:
+                    print(game)
+    sys.exit(0)
+
+
 def cmd_gen_args(args, cmd):
     if args.fps_limit and args.vsync:
         cmd.append('strangle')
@@ -235,9 +258,11 @@ def main():
                         help='Print program version')
     parser.add_argument('game', type=str, metavar='GAME', action='store', nargs='?',
                         help="Command or path to the game you wanna run")
-    parser.add_argument('java', action='store_true',
+    parser.add_argument('--list', type=str, metavar='ITEM', action='store',
+                        help='List games that you sorted by category or categories themself')
+    parser.add_argument('--java', action='store_true',
                         help='Run a java game')
-    parser.add_argument('flatpak', action='store_true',
+    parser.add_argument('--flatpak', action='store_true',
                         help='Run a flatpak game')
     parser.add_argument('-a', '--args', type=str, metavar='ARGUMENTS', action='store',
                         help='Additional game arguments')
@@ -292,6 +317,12 @@ def main():
     if args.version:
         print(f'Version: {VERSION}')
         sys.exit(0)
+
+    if args.list and configExists:
+        list_by_category(args.list, config)
+    elif args.list and not configExists:
+        print('This options requires for you to make a games config')
+        sys.exit(1)
 
     if not args.game:
         print('Game must be provided')
