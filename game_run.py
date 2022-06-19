@@ -80,6 +80,19 @@ def set_java(cmd):
     return cmd
 
 
+def set_steam(cmd, id):
+    cmd.append('steam')
+    cmd.append(f'steam://rungameid/{id}')
+    return cmd
+
+
+def set_lutris(cmd, id):
+    cmd.append('lutris')
+    cmd.append(f'lutris:rungameid/{id}')
+    os.environ['LUTRIS_SKIP_INIT'] = '1'
+    return cmd
+
+
 def set_flatpak(cmd):
     cmd.append('flatpak')
     cmd.append('run')
@@ -234,6 +247,14 @@ def cmd_gen_config(config, cmd, game):
     if config.has_option(game, 'java'):
         if config.getboolean(game, 'java'):
             cmd = set_java(cmd)
+
+    if config.has_option(game, 'steam'):
+        if config.getboolean(game, 'steam'):
+            cmd = set_steam(cmd, config.get(game, 'path'))
+
+    if config.has_option(game, 'lutris'):
+        if config.getboolean(game, 'lutris'):
+            cmd = set_lutris(cmd, config.get(game, 'path'))
 
     if config.has_option(game, 'flatpak'):
         if config.getboolean(game, 'flatpak'):
