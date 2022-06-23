@@ -23,6 +23,10 @@ def set_fps(cmd, fps):
     return cmd
 
 
+def set_fps_dxvk(fps):
+    os.environ['DXVK_FRAME_RATE'] = fps
+
+
 def enable_mangohud(cmd, dlsym=False):
     cmd.append('mangohud')
     if dlsym:
@@ -201,6 +205,9 @@ def cmd_gen_config(config, cmd, game):
     elif config.has_option(game, 'vsync'):
         cmd.append('strangle')
         cmd = set_vsync(cmd, config.get(game, 'vsync'))
+
+    if config.has_option(game, 'fps_dxvk'):
+        set_fps_dxvk(config.get(game, 'fps_dxvk'))
 
     if config.has_option(game, 'gamemode'):
         if config.getboolean(game, 'gamemode'):
