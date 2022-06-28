@@ -4,6 +4,7 @@ import sys
 import os
 import subprocess
 import configparser
+import pathlib
 
 VERSION = "1.4"
 
@@ -35,18 +36,20 @@ def enable_mangohud(cmd, dlsym=False):
 
 
 def set_wine(cmd, prefix, wine):
+    wine_version = pathlib.PurePath(wine).name
     os.environ['WINEPREFIX'] = prefix
-    if wine == 'wine':
-        cmd.append('wine')
-    elif wine == 'proton':
+    if wine_version == 'wine' or wine_version == 'wine64':
+        cmd.append(wine)
+    elif wine_version == 'proton':
         os.environ['STEAM_COMPAT_DATA_PATH'] = prefix
         os.environ['STEAM_COMPAT_CLIENT_INSTALL_PATH'] = os.path.expanduser(
             '~/.steam/steam')
-        cmd.append(
-            '/usr/share/steam/compatibilitytools.d/proton-ge-custom/proton')
+        if wine == 'proton':
+            cmd.append(
+                '/usr/share/steam/compatibilitytools.d/proton-ge-custom/proton')
+        else:
+            cmd.append(wine)
         cmd.append('run')
-    else:
-        cmd.append(wine)
     if not os.path.exists(prefix):
         os.mkdir(prefix)
 
