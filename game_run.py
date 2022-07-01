@@ -231,10 +231,6 @@ def main():
     launch.add_argument('game', type=str, metavar='GAME', action='store', nargs='?',
                         help="Game name from the config")
 
-    add = subparser.add_parser('launch', help="Add a game to the config")
-    add.add_argument('name', type=str, metavar='NAME', action='store', nargs='?',
-                        help="Name of the game to add")
-
     config = configparser.ConfigParser()
 
     if os.path.isfile(os.path.expanduser("~/.config/game-run/config.ini")):
